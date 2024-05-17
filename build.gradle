@@ -1,7 +1,6 @@
 plugins {
     id "architectury-plugin" version "3.+"
-    id "dev.architectury.loom" version "1.3+" apply false
-    id "io.github.juuxel.loom-vineflower" version "1.+" apply false // Vineflower
+    id "dev.architectury.loom" version "1.+" apply false
     id "io.github.p03w.machete" version "1.+" // automatic jar compressing on build
 }
 
@@ -9,20 +8,10 @@ architectury {
     minecraft = rootProject.minecraft_version
 }
 
-def getGitHash = { ->
-    def stdout = new ByteArrayOutputStream()
-    exec {
-        commandLine "git", "rev-parse", "--short", "HEAD"
-        standardOutput = stdout
-    }
-    return stdout.toString().trim()
-}
-
 boolean ci = System.getenv("CI") != null ? System.getenv("CI").toBoolean() : false
 
 subprojects {
     apply plugin: "dev.architectury.loom"
-    apply plugin: "io.github.juuxel.loom-vineflower"
     apply plugin: "maven-publish"
 
     loom {
@@ -36,6 +25,9 @@ subprojects {
         maven { url = "https://maven.quiltmc.org/repository/release" } // Quilt Mappings
         maven { url = "https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1" } // DevAuth
     }
+
+    String buildNumber = System.getenv("GITHUB_RUN_NUMBER")
+    version = "${mod_version}+mc.${minecraft_version}-${project.name}${buildNumber ? "-build.${buildNumber}" : ""}"
 
     dependencies {
         minecraft "com.mojang:minecraft:${minecraft_version}"
@@ -52,7 +44,6 @@ subprojects {
         publications {
             mavenJava(MavenPublication) {
                 artifactId = rootProject.mod_id
-                version = "${mod_version}-${getGitHash()}+${minecraft_version}-${project.name}"
                 from components.java
             }
         }
@@ -82,8 +73,6 @@ allprojects {
         archivesName.set(rootProject.mod_id)
         group = rootProject.maven_group
     }
-
-    version = "${mod_version}-${getGitHash()}+${minecraft_version}-${project.name}"
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = "UTF-8"
