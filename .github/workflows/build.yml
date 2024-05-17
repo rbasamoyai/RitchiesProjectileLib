@@ -65,7 +65,7 @@ jobs:
           MAVEN_USER: ${{ secrets.MAVEN_USER }}
           MAVEN_ACCESS_TOKEN: ${{ secrets.MAVEN_ACCESS_TOKEN }}
         if: github.event_name == 'push' && env.MAVEN_USER != '' && env.MAVEN_ACCESS_TOKEN != ''
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v3
         with:
           arguments: |
             publishMavenJavaPublicationToRealRobotixMavenRepository
@@ -84,7 +84,7 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         if: github.event_name == 'push' && env.DISCORD_WEBHOOK != ''
-        uses: realRobotix/action-discord-notifier@release-master
+        uses: realRobotix/action-discord-notifier@master
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
           message-title: Building mod from branch ${{ steps.get_branch.outputs.branch }}
