@@ -1,11 +1,9 @@
 name: Java CI with Gradle
 
 on:
-  workflow_dispatch:
   push:
-    tags-ignore:
-      - '*'
-  pull_request:
+    tags:
+      - 'v*'
 
 permissions:
   contents: read
@@ -53,10 +51,13 @@ jobs:
             loom-cache
 
       - name: Build jar
+        env:
+          RELEASE: true
         run: ./gradlew build
 
       - name: Publish to GitHub Packages
         env:
+          RELEASE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: env.GITHUB_TOKEN != ''
         continue-on-error: true
@@ -64,6 +65,7 @@ jobs:
 
       - name: Publish to realRobotix Maven
         env:
+          RELEASE: true
           MAVEN_USER: ${{ secrets.MAVEN_USER }}
           MAVEN_ACCESS_TOKEN: ${{ secrets.MAVEN_ACCESS_TOKEN }}
         if: env.MAVEN_USER != '' && env.MAVEN_ACCESS_TOKEN != ''
@@ -74,13 +76,13 @@ jobs:
         run: |
           EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
           echo "jars<<$EOF" >> $GITHUB_OUTPUT
-          find . -regextype posix-extended -regex "\.\/($(tr "," "|" <<< ${{ steps.read_properties.outputs.enabled_platforms }}))\/build\/libs\/${{ steps.read_properties.outputs.mod_id }}-${{ steps.get_mod_version.outputs.version }}\+mc\.${{ steps.read_properties.outputs.minecraft_version }}-($(tr "," "|" <<< ${{ steps.read_properties.outputs.enabled_platforms }}))-build\.${{ github.run_number }}\.jar" >> $GITHUB_OUTPUT
+          find . -regextype posix-extended -regex "\.\/($(tr "," "|" <<< ${{ steps.read_properties.outputs.enabled_platforms }}))\/build\/libs\/${{ steps.read_properties.outputs.mod_id }}-${{ steps.get_mod_version.outputs.version }}\+mc\.${{ steps.read_properties.outputs.minecraft_version }}-($(tr "," "|" <<< ${{ steps.read_properties.outputs.enabled_platforms }}))\.jar" >> $GITHUB_OUTPUT
           echo "$EOF" >> $GITHUB_OUTPUT
 
       - name: Send building message to discord
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        if: github.event_name == 'push' && env.DISCORD_WEBHOOK != ''
+        if: env.DISCORD_WEBHOOK != ''
         uses: realRobotix/action-discord-notifier@master
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
@@ -89,7 +91,7 @@ jobs:
       - name: Send built file to discord
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        if: github.event_name == 'push' && env.DISCORD_WEBHOOK != ''
+        if: env.DISCORD_WEBHOOK != ''
         run: |
           while IFS= read -r f
             do curl -F "file=@\"$f\";filename=\"$(echo ${f##*/} | sed 's/+/-/g')\"" $DISCORD_WEBHOOK
@@ -98,5 +100,5 @@ jobs:
       - name: Archive Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.read_properties.outputs.mod_id }}-${{ steps.get_mod_version.outputs.version }}+mc.${{ steps.read_properties.outputs.minecraft_version }}-build.${{ github.run_number }}
+          name: ${{ steps.read_properties.outputs.mod_id }}-${{ steps.get_mod_version.outputs.version }}+mc.${{ steps.read_properties.outputs.minecraft_version }}
           path: ${{ steps.find_jars.outputs.jars }}
