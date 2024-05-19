@@ -1,10 +1,10 @@
-name: Java CI with Gradle
+name: Nightly Build
 
 on:
   workflow_dispatch:
   push:
-    tags-ignore:
-      - '*'
+    branches:
+      - "*"
   pull_request:
 
 permissions:
