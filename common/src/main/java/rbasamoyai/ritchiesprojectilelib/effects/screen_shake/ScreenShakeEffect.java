@@ -11,6 +11,7 @@ public class ScreenShakeEffect {
 
     public ScreenShakeEffect(int duration, float yawMagnitude, float pitchMagnitude, float rollMagnitude) {
         this.duration = duration;
+        this.timer = duration;
         this.yawMagnitude = yawMagnitude;
         this.pitchMagnitude = pitchMagnitude;
         this.rollMagnitude = rollMagnitude;

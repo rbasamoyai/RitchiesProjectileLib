@@ -39,8 +39,7 @@ public class RPLScreenShakeHandlerClient {
     /**
      * Shake the screen of the <b>client</b>. For shaking the screen from the server side, use {@link
      * RitchiesProjectileLib#shakePlayerScreen(ServerPlayer, ScreenShakeEffect)}.
-     * <br>
-     * This method uses the <b>default</b> mod screen shake handler.
+     * <p>This method uses the <b>default</b> mod screen shake handler.
      *
      * @param effect the screen shake effect
      */
@@ -51,8 +50,7 @@ public class RPLScreenShakeHandlerClient {
     /**
      * Shake the screen of the <b>client</b>. For shaking the screen from the server side, use {@link
      * RitchiesProjectileLib#shakePlayerScreen(ServerPlayer, ScreenShakeEffect)}.
-     * <br>
-     * If {@code modHandlerId} is invalid, the screen shake handler will not shake the screen. This <b>does not
+     * <p>If {@code modHandlerId} is invalid, the screen shake handler will not shake the screen. This <b>does not
      * default</b> to the default handler.
      *
      * @param modHandlerId the id of the mod screen shake handler to handle the effect

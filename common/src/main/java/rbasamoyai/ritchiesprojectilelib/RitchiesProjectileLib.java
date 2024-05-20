@@ -50,8 +50,7 @@ public class RitchiesProjectileLib {
      * Shake the screen of a player from the <b>server side</b>. For client side shake effects, use {@link
      * rbasamoyai.ritchiesprojectilelib.effects.screen_shake.RPLScreenShakeHandlerClient#addShakeEffect(ScreenShakeEffect)}
      * or {@link rbasamoyai.ritchiesprojectilelib.effects.screen_shake.RPLScreenShakeHandlerClient#addShakeEffect(ResourceLocation, ScreenShakeEffect)}.
-     * <br>
-     * If {@code modHandlerId} is invalid on client side, the screen shake handler will not shake the screen. This
+     * <p>If {@code modHandlerId} is invalid on client side, the screen shake handler will not shake the screen. This
      * <b>does not default</b> to the default handler.
      *
      * @param player the server side player targeted by the effect
@@ -66,8 +65,7 @@ public class RitchiesProjectileLib {
      * Shake the screen of a player from the <b>server side</b>. For client side shake effects, use {@link
      * rbasamoyai.ritchiesprojectilelib.effects.screen_shake.RPLScreenShakeHandlerClient#addShakeEffect(ScreenShakeEffect)}
      * or {@link rbasamoyai.ritchiesprojectilelib.effects.screen_shake.RPLScreenShakeHandlerClient#addShakeEffect(ResourceLocation, ScreenShakeEffect)}.
-     * <br>
-     * This is equivalent to {@code shakePlayerScreen(ServerPlayer, new ResourceLocation("ritchiesprojectilelib:shake_handler"), ScreenShakeEffect)},
+     * <p>This is equivalent to {@code shakePlayerScreen(ServerPlayer, new ResourceLocation("ritchiesprojectilelib:shake_handler"), ScreenShakeEffect)},
      * guaranteeing that the default RPL mod screen shake handler applies the screen shake effect.
      *
      * @param player the server side player targeted by the effect
