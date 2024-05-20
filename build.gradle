@@ -1,6 +1,6 @@
 plugins {
-    id "architectury-plugin" version "3.+"
-    id "dev.architectury.loom" version "1.+" apply false
+    id "architectury-plugin" version "3.4-SNAPSHOT"
+    id "dev.architectury.loom" version "1.5+" apply false
     id "io.github.p03w.machete" version "1.+" // automatic jar compressing on build
 }
 
@@ -36,7 +36,7 @@ subprojects {
         maven { url = "https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1" } // DevAuth
     }
 
-    String buildNumber = System.getenv("GITHUB_RUN_NUMBER")
+    String buildNumber = System.getenv("GITHUB_RUN_NUMBER") == null ? "local" : System.getenv("GITHUB_RUN_NUMBER")
     version = "${getGitTag()}+mc.${minecraft_version}-${project.name}${nightly ? "-build.${buildNumber}" : ""}"
 
     dependencies {
