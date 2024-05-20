@@ -36,6 +36,8 @@ dependencies {
     modApi(include("curse.maven:forge-config-api-port-fabric-547434:${config_api_id}"))
     modApi(include("com.electronwill.night-config:core:${night_config_version}"))
     modApi(include("com.electronwill.night-config:toml:${night_config_version}"))
+
+    implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.1'
 }
 
 processResources {
