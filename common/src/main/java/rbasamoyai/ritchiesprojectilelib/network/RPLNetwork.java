@@ -1,5 +1,7 @@
 package rbasamoyai.ritchiesprojectilelib.network;
 
+import java.util.function.Function;
+
 import dev.architectury.injectables.annotations.ExpectPlatform;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -9,8 +11,6 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-
-import java.util.function.Function;
 
 public class RPLNetwork {
 
@@ -22,8 +22,8 @@ public class RPLNetwork {
 	public static void init() {
 		int id = 0;
 		addMsg(id++, ClientboundCheckChannelVersionPacket.class, ClientboundCheckChannelVersionPacket::new);
-
 		addMsg(id++, ClientboundPreciseMotionSyncPacket.class, ClientboundPreciseMotionSyncPacket::new);
+		addMsg(id++, ClientboundShakeScreenPacket.class, ClientboundShakeScreenPacket::new);
 
 		sidedInit();
 	}

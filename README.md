@@ -6,7 +6,8 @@ Adds the following features:
 - `#ritchiesprojectilelib:precise_motion`: an entity type tag that sends more detailed movement and position data to clients.
 - A configurable chunkloading system oriented towards modded long-range and fast projectiles.
   - Unloads forceloaded chunks that are no longer in use
-  - Loads a portion of forceloaded chunks at a time to reduce performance impact while still allowing for many long distance travels.  
+  - Loads a portion of forceloaded chunks at a time to reduce performance impact while still allowing for many long distance travels.
+- Screen shake effect for mods, particularly those focused on firearms and artillery
 
 ---
 

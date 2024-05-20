@@ -2,12 +2,15 @@ package rbasamoyai.ritchiesprojectilelib.forge;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import rbasamoyai.ritchiesprojectilelib.RitchiesProjectileLib;
 import rbasamoyai.ritchiesprojectilelib.config.RPLConfigs;
 
@@ -20,20 +23,23 @@ public class RitchiesProjectileLibForge {
         ModLoadingContext mlContext = ModLoadingContext.get();
         RPLConfigs.registerConfigs(mlContext::registerConfig);
 
+        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         IEventBus forgeBus = MinecraftForge.EVENT_BUS;
         forgeBus.addListener(this::onPlayerLogin);
         forgeBus.addListener(this::onServerLevelTick);
+
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> RPLForgeClient.init(modBus, forgeBus));
     }
 
-    public void onPlayerLogin(final PlayerLoggedInEvent evt) {
-        if (evt.getPlayer() instanceof ServerPlayer splayer) {
+    public void onPlayerLogin(final PlayerLoggedInEvent event) {
+        if (event.getPlayer() instanceof ServerPlayer splayer) {
             RitchiesProjectileLib.onPlayerJoin(splayer);
         }
     }
 
-    public void onServerLevelTick(final TickEvent.WorldTickEvent evt) {
-        if (evt.world instanceof ServerLevel slevel) {
-            if (evt.phase == TickEvent.Phase.END) {
+    public void onServerLevelTick(final TickEvent.WorldTickEvent event) {
+        if (event.world instanceof ServerLevel slevel) {
+            if (event.phase == TickEvent.Phase.END) {
                 RitchiesProjectileLib.onServerLevelTickEnd(slevel);
             }
         }
