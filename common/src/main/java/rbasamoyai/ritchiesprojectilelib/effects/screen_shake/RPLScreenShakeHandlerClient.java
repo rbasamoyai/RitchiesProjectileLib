@@ -24,6 +24,8 @@ public class RPLScreenShakeHandlerClient {
     }
 
     public static void tick(Minecraft minecraft) {
+        if (minecraft.isPaused())
+            return;
         for (ModScreenShakeHandler handler : HANDLERS.values()) {
             handler.tick(minecraft);
         }
