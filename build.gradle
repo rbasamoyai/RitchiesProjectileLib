@@ -9,7 +9,7 @@ architectury {
 }
 
 boolean ci = System.getenv("CI") != null ? System.getenv("CI").toBoolean() : false
-boolean nightly = ci && System.getenv("RELEASE") != null ? !System.getenv("RELEASE").toBoolean() : true
+boolean nightly = ci && (System.getenv("RELEASE") != null ? !System.getenv("RELEASE").toBoolean() : true)
 
 def getGitTag = { ->
     def stdout = new ByteArrayOutputStream()
@@ -36,7 +36,7 @@ subprojects {
         maven { url = "https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1" } // DevAuth
     }
 
-    String buildNumber = System.getenv("GITHUB_RUN_NUMBER") == null ? "local" : System.getenv("GITHUB_RUN_NUMBER")
+    String buildNumber = System.getenv("GITHUB_RUN_NUMBER")
     version = "${getGitTag()}+mc.${minecraft_version}-${project.name}${nightly ? "-build.${buildNumber}" : ""}"
 
     dependencies {
