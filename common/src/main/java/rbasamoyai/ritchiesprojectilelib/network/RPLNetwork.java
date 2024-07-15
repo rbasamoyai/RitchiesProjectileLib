@@ -1,5 +1,7 @@
 package rbasamoyai.ritchiesprojectilelib.network;
 
+import java.util.function.Function;
+
 import dev.architectury.injectables.annotations.ExpectPlatform;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -10,20 +12,19 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
-import java.util.function.Function;
-
 public class RPLNetwork {
 
 	private static final Int2ObjectMap<Function<FriendlyByteBuf, ? extends RootPacket>> ID_TO_CONSTRUCTOR = new Int2ObjectOpenHashMap<>();
 	private static final Object2IntMap<Class<? extends RootPacket>> TYPE_TO_ID = new Object2IntOpenHashMap<>();
 
-	public static final String VERSION = "1.0.0";
+	public static final String VERSION = "3.0.0";
 
 	public static void init() {
 		int id = 0;
 		addMsg(id++, ClientboundCheckChannelVersionPacket.class, ClientboundCheckChannelVersionPacket::new);
-
 		addMsg(id++, ClientboundPreciseMotionSyncPacket.class, ClientboundPreciseMotionSyncPacket::new);
+		addMsg(id++, ClientboundShakeScreenPacket.class, ClientboundShakeScreenPacket::new);
+        addMsg(id++, ClientboundSyncBurstSubProjectilesPacket.class, ClientboundSyncBurstSubProjectilesPacket::decode);
 
 		sidedInit();
 	}
