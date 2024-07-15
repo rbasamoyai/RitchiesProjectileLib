@@ -1,13 +1,15 @@
 package rbasamoyai.ritchiesprojectilelib;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import rbasamoyai.ritchiesprojectilelib.chunkloading.ChunkManager;
+import rbasamoyai.ritchiesprojectilelib.effects.screen_shake.ScreenShakeEffect;
+import rbasamoyai.ritchiesprojectilelib.network.ClientboundShakeScreenPacket;
 import rbasamoyai.ritchiesprojectilelib.network.RPLNetwork;
 
 public class RitchiesProjectileLib {
@@ -33,28 +35,44 @@ public class RitchiesProjectileLib {
     }
 
     /**
-     * Remove or queue a chunk for force loading.
+     * Queue a chunk for temporary force loading.
      *
-     * @param level
-     * @param entity
-     * @param chunkX
-     * @param chunkZ
-     * @param load
+     * @param level the level which to force load the chunk
+     * @param chunkX the X component of the chunk coordinate
+     * @param chunkZ the Z component of the chunk coordinate
      */
-    public static void queueForceLoad(ServerLevel level, Entity entity, int chunkX, int chunkZ, boolean load) {
+    public static void queueForceLoad(ServerLevel level, int chunkX, int chunkZ) {
         ChunkManager manager = level.getDataStorage().computeIfAbsent(ChunkManager::load, ChunkManager::new, CHUNK_MANAGER_ID);
-        manager.trackForcedChunk(level, entity, new ChunkPos(chunkX, chunkZ), load);
+        manager.queueForceLoad(new ChunkPos(chunkX, chunkZ));
     }
 
     /**
-     * Mark all chunks loaded by an entity as no longer force loaded. Use when the entity is removed, e.g. killed, change dimension.
+     * Shake the screen of a player from the <b>server side</b>. For client side shake effects, use {@link
+     * rbasamoyai.ritchiesprojectilelib.effects.screen_shake.RPLScreenShakeHandlerClient#addShakeEffect(ScreenShakeEffect)}
+     * or {@link rbasamoyai.ritchiesprojectilelib.effects.screen_shake.RPLScreenShakeHandlerClient#addShakeEffect(ResourceLocation, ScreenShakeEffect)}.
+     * <p>If {@code modHandlerId} is invalid on client side, the screen shake handler will not shake the screen. This
+     * <b>does not default</b> to the default handler.
      *
-     * @param level
-     * @param entity
+     * @param player the server side player targeted by the effect
+     * @param modHandlerId the id of the mod screen shake handler to handle the effect
+     * @param effect the screen shake effect
      */
-    public static void removeAllForceLoaded(ServerLevel level, Entity entity) {
-        ChunkManager manager = level.getDataStorage().computeIfAbsent(ChunkManager::load, ChunkManager::new, CHUNK_MANAGER_ID);
-        manager.clearEntity(entity);
+    public static void shakePlayerScreen(ServerPlayer player, ResourceLocation modHandlerId, ScreenShakeEffect effect) {
+        RPLNetwork.sendToClientPlayer(new ClientboundShakeScreenPacket(modHandlerId, effect), player);
+    }
+
+    /**
+     * Shake the screen of a player from the <b>server side</b>. For client side shake effects, use {@link
+     * rbasamoyai.ritchiesprojectilelib.effects.screen_shake.RPLScreenShakeHandlerClient#addShakeEffect(ScreenShakeEffect)}
+     * or {@link rbasamoyai.ritchiesprojectilelib.effects.screen_shake.RPLScreenShakeHandlerClient#addShakeEffect(ResourceLocation, ScreenShakeEffect)}.
+     * <p>This is equivalent to {@code shakePlayerScreen(ServerPlayer, new ResourceLocation("ritchiesprojectilelib:shake_handler"), ScreenShakeEffect)},
+     * guaranteeing that the default RPL mod screen shake handler applies the screen shake effect.
+     *
+     * @param player the server side player targeted by the effect
+     * @param effect the screen shake effect
+     */
+    public static void shakePlayerScreen(ServerPlayer player, ScreenShakeEffect effect) {
+        RPLNetwork.sendToClientPlayer(new ClientboundShakeScreenPacket(effect), player);
     }
 
 }

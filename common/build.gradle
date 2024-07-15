@@ -14,4 +14,6 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:${fabric_loader_version}")
 
     modApi("curse.maven:forge-config-api-port-fabric-547434:${config_api_id}")
+
+    implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.1'
 }

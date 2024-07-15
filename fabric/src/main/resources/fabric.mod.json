@@ -18,7 +18,7 @@
       "rbasamoyai.ritchiesprojectilelib.fabric.RitchiesProjectileLibFabric"
     ],
     "client": [
-      "rbasamoyai.ritchiesprojectilelib.fabric.RitchiesProjectileLibFabricClient"
+      "rbasamoyai.ritchiesprojectilelib.fabric.RPLFabricClient"
     ]
   },
   "mixins": [
