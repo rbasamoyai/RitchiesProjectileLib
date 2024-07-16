@@ -68,7 +68,7 @@ public abstract class ProjectileBurst extends Projectile {
 
 	@Override
 	public void tick() {
-		if (!this.level.isClientSide && (this.tickCount % 10 == 1))
+		if (!this.level().isClientSide && (this.tickCount % 10 == 1))
 			this.syncAllDataToServer();
 		for (Iterator<SubProjectile> iter = this.subProjectiles.iterator(); iter.hasNext(); ) {
 			SubProjectile subProjectile = iter.next();
@@ -97,13 +97,13 @@ public abstract class ProjectileBurst extends Projectile {
 		Vec3 end = start.add(vel);
 		double halfHeight = this.getSubProjectileHeight() / 2d;
 		double halfWidth = this.getSubProjectileWidth() / 2d;
-		HitResult hitResult = this.level.clip(new ProjectileBurstClipContext(start, end, ClipContext.Block.COLLIDER,
+		HitResult hitResult = this.level().clip(new ProjectileBurstClipContext(start, end, ClipContext.Block.COLLIDER,
 			ClipContext.Fluid.NONE, this, start.y - halfHeight));
 		if (hitResult.getType() != HitResult.Type.MISS)
 			end = hitResult.getLocation();
 		AABB aabb = new AABB(start.x - halfWidth, start.y - halfHeight, start.z - halfWidth, start.x + halfWidth,
 			start.y + halfHeight, start.z + halfWidth);
-		HitResult hitResult2 = getEntityHitResult(this.level, this, start, end, aabb.expandTowards(vel).inflate(1.0),
+		HitResult hitResult2 = getEntityHitResult(this.level(), this, start, end, aabb.expandTowards(vel).inflate(1.0),
             this::canHitEntity, (float) halfWidth);
 		if (hitResult2 != null)
 			hitResult = hitResult2;
@@ -133,7 +133,7 @@ public abstract class ProjectileBurst extends Projectile {
 			this.onSubProjectileHitBlock((BlockHitResult) result, subProjectile);
 		}
 		if (type != HitResult.Type.MISS) {
-			this.level.gameEvent(this, GameEvent.PROJECTILE_LAND, new Vec3(subProjectile.displacement[0] + this.getX(),
+			this.level().gameEvent(this, GameEvent.PROJECTILE_LAND, new Vec3(subProjectile.displacement[0] + this.getX(),
 				subProjectile.displacement[1] + this.getY(), subProjectile.displacement[2] + this.getZ()));
 		}
 	}
@@ -142,8 +142,8 @@ public abstract class ProjectileBurst extends Projectile {
 	}
 
 	protected void onSubProjectileHitBlock(BlockHitResult result, SubProjectile subProjectile) {
-        BlockState blockState = this.level.getBlockState(result.getBlockPos());
-        blockState.onProjectileHit(this.level, blockState, result, this);
+        BlockState blockState = this.level().getBlockState(result.getBlockPos());
+        blockState.onProjectileHit(this.level(), blockState, result, this);
 	}
 
 	public record SubProjectile(double[] displacement, double[] velocity) {
