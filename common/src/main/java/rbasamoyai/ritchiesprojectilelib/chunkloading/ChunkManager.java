@@ -1,15 +1,17 @@
 package rbasamoyai.ritchiesprojectilelib.chunkloading;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.SetMultimap;
+import java.util.Map;
+
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.TicketType;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
@@ -18,107 +20,103 @@ import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.saveddata.SavedData;
 import rbasamoyai.ritchiesprojectilelib.config.RPLConfigs;
 
-import java.util.*;
-
 public class ChunkManager extends SavedData {
 
-	private final SetMultimap<UUID, Long> chunks;
-	private final LinkedList<Long> iterated = new LinkedList<>();
-	private final Set<Long> currentlyLoaded = new HashSet<>();
+	private final LongOpenHashSet chunks;
+	private final LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
+	private final LongOpenHashSet inQueue;
+	private final Long2IntOpenHashMap loaded = new Long2IntOpenHashMap();
 
-	public ChunkManager() {
-		this(HashMultimap.create());
-	}
+	public ChunkManager() { this(new LongOpenHashSet()); }
 
-	private ChunkManager(SetMultimap<UUID, Long> map) {
-		this.chunks = map;
-		this.iterated.addAll(this.chunks.values());
-	}
+    public ChunkManager(LongOpenHashSet chunks) {
+        this.chunks = chunks;
+		this.inQueue = new LongOpenHashSet(this.chunks);
+		for (long packedPos : this.chunks)
+			this.queue.enqueue(packedPos);
+    }
 
-	public static ChunkManager load(CompoundTag tag) {
-		SetMultimap<UUID, Long> chunks = HashMultimap.create();
-		ListTag loadedList = tag.getList("LoadedChunks", Tag.TAG_COMPOUND);
-		for (int i = 0; i < loadedList.size(); ++i) {
-			CompoundTag eTag = loadedList.getCompound(i);
-			chunks.put(eTag.getUUID("UUID"), eTag.getLong("ChunkPos"));
-		}
+    public static ChunkManager load(CompoundTag tag) {
+		long[] arr = tag.getLongArray("LoadedChunks");
+		LongOpenHashSet chunks = new LongOpenHashSet(arr);
 		return new ChunkManager(chunks);
 	}
 
 	@Override
 	public CompoundTag save(CompoundTag compoundTag) {
-		ListTag loadedList = new ListTag();
-		for (Map.Entry<UUID, Long> e : this.chunks.entries()) {
-			CompoundTag eTag = new CompoundTag();
-			eTag.putUUID("UUID", e.getKey());
-			eTag.putLong("ChunkPos", e.getValue());
-			loadedList.add(eTag);
-		}
-		compoundTag.put("LoadedChunks", loadedList);
+		compoundTag.putLongArray("LoadedChunks", this.chunks.toLongArray());
 		return compoundTag;
 	}
 
-	public void trackForcedChunk(ServerLevel level, Entity entity, ChunkPos pos, boolean loaded) {
-		long l = pos.toLong();
-		UUID uuid = entity.getUUID();
-		if (loaded && !entity.isRemoved() && !this.chunks.containsEntry(uuid, l)) {
-			if (!this.chunks.containsValue(l)) this.iterated.add(l);
-			this.chunks.put(uuid, l);
+	/**
+	 * Use {@link rbasamoyai.ritchiesprojectilelib.RitchiesProjectileLib#queueForceLoad(ServerLevel, int, int)}.
+	 */
+	@Deprecated
+	public void queueForceLoad(ChunkPos pos) {
+		long packedPos = pos.toLong();
+		if (this.inQueue.add(packedPos)) {
+			this.queue.enqueue(packedPos);
+			this.chunks.add(packedPos);
 			this.setDirty();
-		} else if (!loaded && this.chunks.containsEntry(uuid, l)) {
-			this.chunks.remove(uuid, l);
-			this.expireChunkIfNecessary(level, pos);
-			this.setDirty();
-		}
-	}
-
-	public void clearEntity(Entity entity) {
-		this.chunks.removeAll(entity.getUUID());
-		this.setDirty();
-	}
-
-	public void expireChunkIfNecessary(ServerLevel level, ChunkPos cpos) {
-		long l = cpos.toLong();
-		if (!this.currentlyLoaded.contains(l) || level.getForcedChunks().contains(l)) return;
-		if (!this.chunks.containsValue(l)
-			|| this.iterated.size() > this.currentlyLoaded.size() && this.currentlyLoaded.size() >= RPLConfigs.server().maxChunksForceLoaded.get()) {
-			this.currentlyLoaded.remove(l);
-			level.getChunkSource().updateChunkForced(cpos, false);
 		}
 	}
 
 	public void tick(ServerLevel level) {
 		LongSet vanillaForcedChunks = level.getForcedChunks();
-		Set<Long> badChunks = new HashSet<>();
-
 		int MAX_SIZE = RPLConfigs.server().maxChunksForceLoaded.get();
-		int MAX_ITER = 64;
-		if (MAX_SIZE != 0) {
-			int p = 0;
-			int q = 0;
-			LinkedList<Long> tempBuf = new LinkedList<>();
-			while ((MAX_SIZE == -1 || p < MAX_SIZE) && !this.iterated.isEmpty() && (MAX_SIZE == -1 || this.currentlyLoaded.size() < MAX_SIZE) && q++ < MAX_ITER) {
-				long l = this.iterated.poll();
-				if (!this.chunks.containsValue(l)) continue;
-				if (!vanillaForcedChunks.contains(l) && !this.currentlyLoaded.contains(l)) {
-					if (!loadChunkNoGenerate(level, new ChunkPos(l))) {
-						badChunks.add(l);
-						continue;
-					}
-					this.currentlyLoaded.add(l);
-				}
-				tempBuf.add(l);
-				++p;
-			}
-			this.iterated.addAll(tempBuf);
+        if (MAX_SIZE <= 0)
+            MAX_SIZE = Integer.MAX_VALUE;
+		int MAX_CHUNKS_PROCESSED = RPLConfigs.server().maxChunksLoadedEachTick.get();
+		int DEFAULT_AGE = RPLConfigs.server().projectileChunkAge.get();
+        int ENTITY_LOAD_TIMEOUT_AGE = -RPLConfigs.server().entityLoadTimeout.get() - 1;
+
+		LongOpenHashSet expired = new LongOpenHashSet();
+		for (Map.Entry<Long, Integer> entry : this.loaded.long2IntEntrySet()) {
+			long packedPos = entry.getKey();
+            int age = entry.getValue();
+            if (age <= -1) {
+                // Inefficient but less accessor boilerplate
+                ChunkPos cpos = new ChunkPos(packedPos);
+                BlockPos bpos = new BlockPos(SectionPos.sectionToBlockCoord(cpos.x), 0, SectionPos.sectionToBlockCoord(cpos.z));
+                if (level.isPositionEntityTicking(bpos))
+                    age = DEFAULT_AGE;
+            }
+            int newAge = age - 1;
+			entry.setValue(newAge);
+			if (newAge == 0 || newAge <= ENTITY_LOAD_TIMEOUT_AGE)
+				expired.add(packedPos);
 		}
 
-		for (UUID uuid : this.chunks.keySet()) {
-			for (long l : badChunks) {
-				this.chunks.remove(uuid, l);
+		int freeSlots = Math.max(0, MAX_SIZE - this.loaded.size());
+		int pollCount = Math.min(MAX_CHUNKS_PROCESSED, freeSlots + expired.size());
+		pollCount = Math.min(pollCount, this.queue.size());
+		for (int i = 0; i < pollCount; ++i) {
+			if (this.queue.isEmpty())
+				break;
+			long packedPos = this.queue.dequeueLong();
+			this.inQueue.remove(packedPos);
+			ChunkPos chunkPos = new ChunkPos(packedPos);
+			if (this.loaded.containsKey(packedPos) && this.loaded.get(packedPos) > -1) {
+				this.loaded.put(packedPos, DEFAULT_AGE);
+				expired.remove(packedPos);
+			} else if (!vanillaForcedChunks.contains(packedPos) && loadChunkNoGenerate(level, chunkPos)) {
+				this.loaded.put(packedPos, -1);
+				level.getChunkSource().updateChunkForced(chunkPos, true);
+			} else {
+				this.chunks.remove(packedPos);
 			}
 		}
 
+		for (long packedPos : expired) {
+			level.getChunkSource().updateChunkForced(new ChunkPos(packedPos), false);
+			this.loaded.remove(packedPos);
+			if (!this.inQueue.contains(packedPos))
+				this.chunks.remove(packedPos);
+		}
+		this.loaded.trim();
+		this.inQueue.trim();
+		this.queue.trim();
+		this.chunks.trim();
 		this.setDirty();
 	}
 
@@ -126,16 +124,15 @@ public class ChunkManager extends SavedData {
 
 	private static boolean loadChunkNoGenerate(ServerLevel level, ChunkPos cpos) {
 		ServerChunkCache source = level.getChunkSource();
+		ChunkAccess immediate = source.getChunkNow(cpos.x, cpos.z);
+		if (immediate != null)
+			return true;
 		ChunkAccess access = source.getChunk(cpos.x, cpos.z, ChunkStatus.EMPTY, true);
 		if (access instanceof ProtoChunk) {
 			source.removeRegionTicket(TicketType.UNKNOWN, cpos, -11, cpos);
 			access = source.getChunk(cpos.x, cpos.z, ChunkStatus.FULL, true);
 		}
-		if (access instanceof LevelChunk) {
-			source.updateChunkForced(cpos, true);
-			return true;
-		}
-		return false;
-	}
+        return access instanceof LevelChunk;
+    }
 
 }
